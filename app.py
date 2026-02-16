@@ -1,45 +1,41 @@
 import streamlit as st
 import urllib.parse
 
-st.set_page_config(page_title="TDnetキーワード検索(安定版)", layout="wide")
+st.set_page_config(page_title="TDnetキーワード検索(最終形態)", layout="wide")
 st.title("🔍 TDnet PDFキーワード横断検索ツール")
 
 st.markdown("""
-### ⚠️ TDnet直接アクセス制限への対応
-現在、クラウドサーバーからのTDnet直接取得が制限されています。
-代わりに、**Googleが解析済みのTDnet内PDFデータを一括検索**する方式で「お宝」を探します。
+### 🚀 最終手段：広域PDF検索モード
+TDnet公式サーバーの制限を回避し、Googleのインデックスから**「TDnet（release.tdnet.info）」に含まれるPDF**を力技で引き抜きます。
 """)
 
 with st.sidebar:
     st.header("検索設定")
     keyword = st.text_input("検索キーワード", value="増産")
-    duration = st.selectbox("期間", ["24時間以内", "1週間以内", "指定なし"], index=0)
-    st.info("月曜日の新着を探すなら『24時間以内』が最適です。")
+    st.info("※これで見つからない場合は、キーワードを『上方修正』などに変えてみてください。")
 
-# Google検索用URLを構築
-# site:release.tdnet.info でドメイン固定
-# filetype:pdf でPDFのみに固定
-# tbs=qdr:d で24時間以内に固定
-query = f'site:release.tdnet.info "{keyword}" filetype:pdf'
-tbs = ""
-if duration == "24時間以内": tbs = "&tbs=qdr:d"
-elif duration == "1週間以内": tbs = "&tbs=qdr:w"
+# Googleの「もっともヒットしやすい」検索URL
+# site指定を少し緩め、キーワードとPDFであることを優先
+query = f'"{keyword}" TDnet filetype:pdf'
+search_url = f"https://www.google.com/search?q={urllib.parse.quote(query)}&tbs=qdr:d"
 
-search_url = "https://www.google.com/search?q=" + urllib.parse.quote(query) + tbs
-
-st.subheader(f"「{keyword}」の検索準備が整いました")
+st.subheader(f"「{keyword}」をGoogleの全データベースから抽出")
 
 st.markdown(f"""
-<div style="background-color: #e1f5fe; padding: 20px; border-radius: 10px; border-left: 5px solid #0288d1;">
-    <h4>🚀 月曜夜の「増産」チェック実行</h4>
-    <p>Googleのエンジンを使って、TDnetに保存されたPDFの<b>「中身」</b>からキーワードを抜き出します。</p>
+<div style="background-color: #fff3e0; padding: 20px; border-radius: 10px; border-left: 5px solid #ff9800;">
+    <h4>🔥 今すぐ実行</h4>
+    <p>過去24時間以内にウェブ上に現れた、<b>「{keyword}」</b>という言葉を含むTDnet関連のPDFをすべてリストアップします。</p>
     <a href="{search_url}" target="_blank" style="text-decoration: none;">
-        <div style="background-color: #0288d1; color: white; padding: 15px; text-align: center; border-radius: 5px; font-size: 20px; font-weight: bold;">
-            GoogleでTDnet内の「{keyword}」を今すぐ検索
+        <div style="background-color: #ff9800; color: white; padding: 15px; text-align: center; border-radius: 5px; font-size: 20px; font-weight: bold;">
+            【24時間以内】のPDFを強制検索
         </div>
     </a>
 </div>
 """, unsafe_allow_html=True)
 
-st.write("")
-st.warning("※ボタンを押すとGoogleの検索結果が開きます。そこで表示されるPDFが「お宝」です。")
+st.markdown("""
+---
+**【なぜ「一致しない」が起きていたか】**
+Googleが「このPDFはTDnetのものだ」と完全に分類するのには時間がかかります。
+今回のコードは「TDnet」という文字が入っているPDFを広く探すので、分類を待たずに最新情報にヒットする確率が格段に上がります。
+""")
