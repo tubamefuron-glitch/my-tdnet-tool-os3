@@ -1,31 +1,59 @@
 import streamlit as st
 import google.generativeai as genai
+import pdfplumber
+import io
 
-st.title("Gemini 最終診断ツール")
+# 画面設定
+st.set_page_config(page_title="AI株探風要約ツール", layout="centered")
+st.title("📈 AI決算サマリー (株探風)")
 
-key = st.sidebar.text_input("API Keyを貼り付け", type="password")
+# サイドバー設定
+with st.sidebar:
+    st.header("設定")
+    api_key = st.text_input("Gemini API Keyを入力", type="password")
+    if api_key:
+        genai.configure(api_key=api_key)
 
-if key:
-    try:
-        genai.configure(api_key=key)
-        
-        # 1. あなたのキーが認識しているモデルを全部リストアップ
-        models = [m.name for m in genai.list_models()]
-        
-        if not models:
-            st.error("⚠️ 致命的なエラー: このキーで利用可能なモデルが1つもありません。Google AI Studioで新しいキーを作成し直してください。")
-        else:
-            st.success(f"利用可能なモデルが見つかりました: {models}")
-            # リストの最初にあるモデルを自動選択
-            target_model = models[0] 
-            model = genai.GenerativeModel(target_model)
-            
-            if st.button("このモデルでテスト実行"):
-                response = model.generate_content("Hello")
-                st.write("AIの返答:", response.text)
+def generate_summary(text):
+    if not api_key:
+        st.error("左側のサイドバーでAPIキーを入力してください。")
+        return
+    
+    # 【重要】あなたの環境で確実に動く「Gemini 2.5 Flash」を指定
+    model = genai.GenerativeModel('models/gemini-2.5-flash')
+    
+    prompt = f"""
+    以下の決算短信の内容を読み取り、日本の投資ニュースサイト「株探（Kabutan）」の見出し風に1行で要約してください。
+    
+    【ルール】
+    ・「社名、結論（増益・黒字浮上など）、具体的な数字」の構成にすること。
+    ・ポジティブな要素を強調しつつ、進捗率や配当修正があれば盛り込むこと。
+    ・簡潔で読みやすい日本語にすること。
 
-    except Exception as e:
-        st.error(f"診断エラー: {e}")
-        st.info("これが表示される場合、APIキー自体がGoogle側でまだアクティブになっていないか、アカウント制限がかかっています。")
-else:
-    st.info("サイドバーにキーを入力してください")
+    【対象テキスト】
+    {text}
+    """
+    
+    with st.spinner("最新AI（Gemini 2.5）が解析中..."):
+        try:
+            response = model.generate_content(prompt)
+            st.subheader("📋 AI生成見出し")
+            st.success(response.text)
+        except Exception as e:
+            st.error(f"エラーが発生しました: {e}")
+
+# メイン機能
+tab1, tab2 = st.tabs(["PDFアップロード", "テキスト貼り付け"])
+
+with tab1:
+    uploaded_file = st.file_uploader("決算短信のPDFを選択", type="pdf")
+    if uploaded_file and st.button("AI要約を実行 (PDF)"):
+        with pdfplumber.open(io.BytesIO(uploaded_file.read())) as pdf:
+            # 1ページ目からテキスト抽出
+            text = pdf.pages[0].extract_text()
+            generate_summary(text)
+
+with tab2:
+    input_text = st.text_area("決算短信のテキストをここにペースト", height=300)
+    if st.button("AI要約を実行 (テキスト)"):
+        generate_summary(input_text)
