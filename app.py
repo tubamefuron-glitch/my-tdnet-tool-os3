@@ -1,41 +1,28 @@
 import streamlit as st
 import urllib.parse
 
-st.set_page_config(page_title="TDnetキーワード検索(最終形態)", layout="wide")
-st.title("🔍 TDnet PDFキーワード横断検索ツール")
+st.set_page_config(page_title="TDnet 検索ポータル", layout="centered")
+st.title("🎯 TDnet 爆速検索ショートカット")
 
-st.markdown("""
-### 🚀 最終手段：広域PDF検索モード
-TDnet公式サーバーの制限を回避し、Googleのインデックスから**「TDnet（release.tdnet.info）」に含まれるPDF**を力技で引き抜きます。
-""")
+keywords = ["増産", "上方修正", "最高益", "増配", "初配", "復配", "中期経営計画"]
 
-with st.sidebar:
-    st.header("検索設定")
-    keyword = st.text_input("検索キーワード", value="増産")
-    st.info("※これで見つからない場合は、キーワードを『上方修正』などに変えてみてください。")
+st.write("気になるワードを押すと、24時間以内のTDnet PDFをGoogleが直撃します。")
 
-# Googleの「もっともヒットしやすい」検索URL
-# site指定を少し緩め、キーワードとPDFであることを優先
-query = f'"{keyword}" TDnet filetype:pdf'
-search_url = f"https://www.google.com/search?q={urllib.parse.quote(query)}&tbs=qdr:d"
+for kw in keywords:
+    query = f'"{kw}" TDnet filetype:pdf'
+    url = f"https://www.google.com/search?q={urllib.parse.quote(query)}&tbs=qdr:d"
+    
+    st.markdown(f"""
+        <a href="{url}" target="_blank" style="text-decoration: none;">
+            <div style="background-color: #f0f2f6; color: #31333F; padding: 10px; margin: 5px; border-radius: 5px; border: 1px solid #d1d1d1; text-align: center; font-weight: bold; display: inline-block; width: 140px;">
+                {kw}
+            </div>
+        </a>
+    """, unsafe_allow_html=True)
 
-st.subheader(f"「{keyword}」をGoogleの全データベースから抽出")
-
-st.markdown(f"""
-<div style="background-color: #fff3e0; padding: 20px; border-radius: 10px; border-left: 5px solid #ff9800;">
-    <h4>🔥 今すぐ実行</h4>
-    <p>過去24時間以内にウェブ上に現れた、<b>「{keyword}」</b>という言葉を含むTDnet関連のPDFをすべてリストアップします。</p>
-    <a href="{search_url}" target="_blank" style="text-decoration: none;">
-        <div style="background-color: #ff9800; color: white; padding: 15px; text-align: center; border-radius: 5px; font-size: 20px; font-weight: bold;">
-            【24時間以内】のPDFを強制検索
-        </div>
-    </a>
-</div>
-""", unsafe_allow_html=True)
-
-st.markdown("""
----
-**【なぜ「一致しない」が起きていたか】**
-Googleが「このPDFはTDnetのものだ」と完全に分類するのには時間がかかります。
-今回のコードは「TDnet」という文字が入っているPDFを広く探すので、分類を待たずに最新情報にヒットする確率が格段に上がります。
-""")
+st.markdown("---")
+custom_kw = st.text_input("自由なキーワードで検索", value="")
+if custom_kw:
+    q = f'"{custom_kw}" TDnet filetype:pdf'
+    u = f"https://www.google.com/search?q={urllib.parse.quote(q)}&tbs=qdr:d"
+    st.link_button(f"「{custom_kw}」でPDF検索", u)
