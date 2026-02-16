@@ -1,29 +1,31 @@
 import streamlit as st
 import google.generativeai as genai
 
-st.title("Gemini API 最終テスト")
+st.title("Gemini 最終診断ツール")
 
-# サイドバーでAPIキー入力
 key = st.sidebar.text_input("API Keyを貼り付け", type="password")
 
 if key:
     try:
-        # 1. APIキーを設定
         genai.configure(api_key=key)
         
-        # 2. モデルの指定方法を「最新の正式名称」に変更
-        # v1betaエラーを回避するため、あえて models/ を明記します
-        model = genai.GenerativeModel(model_name='models/gemini-1.5-flash')
+        # 1. あなたのキーが認識しているモデルを全部リストアップ
+        models = [m.name for m in genai.list_models()]
         
-        if st.button("テスト実行"):
-            # 3. 実行
-            response = model.generate_content("「接続成功です」と短く返事して")
-            st.success("🎉 ついに成功しました！")
-            st.write("AIからの返事:", response.text)
+        if not models:
+            st.error("⚠️ 致命的なエラー: このキーで利用可能なモデルが1つもありません。Google AI Studioで新しいキーを作成し直してください。")
+        else:
+            st.success(f"利用可能なモデルが見つかりました: {models}")
+            # リストの最初にあるモデルを自動選択
+            target_model = models[0] 
+            model = genai.GenerativeModel(target_model)
             
+            if st.button("このモデルでテスト実行"):
+                response = model.generate_content("Hello")
+                st.write("AIの返答:", response.text)
+
     except Exception as e:
-        # 具体的なエラー内容を表示
-        st.error(f"エラーが発生しました: {e}")
-        st.info("もし404が出る場合は、APIキーが『Google AI Studio』の『無料枠』で作成されているか再確認してください。")
+        st.error(f"診断エラー: {e}")
+        st.info("これが表示される場合、APIキー自体がGoogle側でまだアクティブになっていないか、アカウント制限がかかっています。")
 else:
-    st.info("サイドバーにキーを入れてください")
+    st.info("サイドバーにキーを入力してください")
