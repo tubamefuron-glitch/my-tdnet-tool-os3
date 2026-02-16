@@ -1,30 +1,23 @@
 import streamlit as st
 import google.generativeai as genai
 
-st.title("Gemini API 接続テスト")
+st.title("AI接続テスト（成功するか？）")
 
-# サイドバーで設定
-api_key = st.sidebar.text_input("API Keyを入力", type="password")
+# サイドバーでAPIキー入力
+key = st.sidebar.text_input("API Keyを貼り付け", type="password")
 
-if api_key:
-    genai.configure(api_key=api_key)
-    
-    # 3つの主要なモデル名を試せるようにします
-    model_choice = st.selectbox("モデル名を選択してテスト", [
-        "gemini-1.5-flash", 
-        "gemini-1.5-flash-latest",
-        "gemini-1.5-pro"
-    ])
-
-    test_text = st.text_input("テストメッセージ", value="こんにちは！")
-
-    if st.button("AIに送信"):
-        try:
-            model = genai.GenerativeModel(model_choice)
-            response = model.generate_content(test_text)
-            st.success(f"成功しました！ モデル: {model_choice}")
-            st.write("AIの返答:", response.text)
-        except Exception as e:
-            st.error(f"エラー（{model_choice}）: {e}")
+if key:
+    try:
+        genai.configure(api_key=key)
+        # 最も古い、しかし最も安定しているモデル名を指定
+        model = genai.GenerativeModel('gemini-pro')
+        
+        if st.button("テスト実行"):
+            response = model.generate_content("「こんにちは」と返事して")
+            st.success("成功しました！")
+            st.write("AIからの返事:", response.text)
+            
+    except Exception as e:
+        st.error(f"エラーが発生しました: {e}")
 else:
-    st.warning("左側のサイドバーにAPIキーを入力してください。")
+    st.info("サイドバーにキーを入れてください")
