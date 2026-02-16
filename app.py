@@ -24,8 +24,9 @@ def generate_summary(text):
         st.error("サイドバーでAPIキーを入力してください。")
         return
     
-   model = genai.GenerativeModel('gemini-1.5-flash-latest')
-    # 株探風に見せるための「最強の命令文（プロンプト）」
+    # ↓ この行の先頭のスペースを、上の if や st.error と同じ位置に合わせる
+    model = genai.GenerativeModel('gemini-1.5-flash-latest')
+    
     prompt = f"""
     以下の決算短信の内容を読み取り、日本の投資ニュースサイト「株探（Kabutan）」の見出し風に1行で要約してください。
     
