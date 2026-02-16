@@ -19,8 +19,8 @@ def generate_summary(text):
         st.error("左側のサイドバーでAPIキーを入力してください。")
         return
     
-    # 最も汎用的なモデル名に設定
-    model = genai.GenerativeModel('gemini-1.5-flash')
+   # 修正後
+　　model = genai.GenerativeModel('gemini-1.5-flash-latest')
     
     prompt = f"""
     以下の決算短信の内容を読み取り、株探（Kabutan）の見出し風に1行で要約してください。
