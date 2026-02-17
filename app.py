@@ -28,12 +28,32 @@ if st.button("シートから最新決算を分析"):
             available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
             model = genai.GenerativeModel(available_models[0])
 
-            prompt = f"以下の銘柄リストから、株価に好影響を与える『強い材料』がある銘柄を3つ厳選して:\n\n{raw_text}"
+           # --- ここから貼り替え ---
+            prompt = f"""
+            あなたはプロの証券アナリストです。
+            以下は決算サイトから丸ごとコピー＆ペーストされた未整理のデータです。
+            不要な文字が多く含まれていますが、その中から「銘柄名」「コード」「決算数値」を正確に抽出し、
+            株価に強いポジティブな影響を与える銘柄を最大3つ厳選してください。
+
+            【選別基準】
+            ・「大幅増益」「過去最高益」「黒字浮上」「上方修正」「増配」「自社株買い」
+            ・進捗率が極めて高いもの（1Qで35%超など）
+
+            【出力フォーマット】
+            ■ 銘柄(コード)
+            ■ 判定：【特選】
+            ■ ポジティブ材料：(なぜ良いのか、数字を交えて解説)
+            ■ AIのアドバイス：(今後の注目点)
+
+            【対象データ】
+            {raw_text}
+            """
             
             with st.spinner("AIが全銘柄を瞬時に精査中..."):
                 response = model.generate_content(prompt)
                 st.success("スキャン完了！")
                 st.markdown(response.text)
+            # --- ここまで貼り替え ---
                 
         except Exception as e:
             st.error(f"エラー: {e}")
