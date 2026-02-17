@@ -1,63 +1,78 @@
 import streamlit as st
 import google.generativeai as genai
-import pdfplumber
-import io
+import requests
+import xml.etree.ElementTree as ET
 
 # 画面設定
-st.set_page_config(page_title="AI株探風要約ツール", layout="centered")
-st.title("📈 AI決算サマリー (株探風)")
+st.set_page_config(page_title="自動決算スキャナー", layout="wide")
+st.title("📡 最新決算・爆速自動検知")
+st.caption("TDnetの最新開示を自動取得し、AIが『お宝銘柄』を判定します")
 
 # サイドバー設定
 with st.sidebar:
-    st.header("設定")
-    api_key = st.text_input("Gemini API Keyを入力", type="password")
+    api_key = st.text_input("Gemini API Key", type="password")
     if api_key:
         genai.configure(api_key=api_key)
 
-def generate_summary(text):
+# TDnet RSSから最新情報を取得する関数
+def fetch_tdnet_latest():
+    # TDnetの最新開示RSS（公式）
+    RSS_URL = "https://www.release.tdnet.info/inbs/if_p001.rss"
+    try:
+        response = requests.get(RSS_URL)
+        root = ET.fromstring(response.content)
+        items = []
+        for item in root.findall('.//item'):
+            title = item.find('title').text
+            link = item.find('link').text
+            items.append({"title": title, "link": link})
+        return items
+    except Exception as e:
+        st.error(f"RSS取得エラー: {e}")
+        return []
+
+# AIによる銘柄選別
+def scan_with_ai(disclosures):
     if not api_key:
-        st.error("左側のサイドバーでAPIキーを入力してください。")
+        st.error("APIキーを入力してください。")
         return
-    
-    # 【重要】あなたの環境で確実に動く「Gemini 2.5 Flash」を指定
-    model = genai.GenerativeModel('models/gemini-2.5-flash')
-    
-    prompt = f"""
-    以下の決算短信を読み取り、投資家に役立つ情報を整理して出力してください。
 
-    【出力形式】
-    1. 【見出し】株探風のインパクトある1行要約
-    2. 【好材料のポイント】なぜ好調なのか、数字を交えて3項目で箇条書き
-    3. 【懸念・注目点】今後のリスクや配当、進捗率などについて1行
+    try:
+        available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+        model = genai.GenerativeModel(available_models[0])
 
-    【ルール】
-    ・社名と証券コードを必ず含めること。
-    ・専門用語を使いつつ、分かりやすく。
+        # 開示タイトルを一つのテキストにまとめる
+        titles_text = "\n".join([f"- {d['title']}" for d in disclosures])
 
-    【対象テキスト】
-    {text}
-    """
-    
-    with st.spinner("最新AI（Gemini 2.5）が解析中..."):
-        try:
+        prompt = f"""
+        あなたは機関投資家専属のデータサイエンティストです。
+        以下の最新開示タイトル一覧から、「株価にポジティブな影響を与える可能性が高いもの」を厳選してください。
+
+        【選別基準：強いキーワード】
+        ・増益（20%以上）、過去最高、黒字浮上、上方修正、増配、自社株買い、株主優待新設。
+        ・中計策定、業務提携、DX関連など。
+
+        【回答形式】
+        1. 【期待度：特大】（銘柄名・コード・理由）
+        2. 【期待度：大】（銘柄名・コード・理由）
+
+        【開示タイトル一覧】
+        {titles_text}
+        """
+
+        with st.spinner("AIが最新開示をスクリーニング中..."):
             response = model.generate_content(prompt)
-            st.subheader("📋 AI生成見出し")
-            st.success(response.text)
-        except Exception as e:
-            st.error(f"エラーが発生しました: {e}")
+            st.success("スキャン完了！")
+            st.markdown(response.text)
+            
+    except Exception as e:
+        st.error(f"AI解析エラー: {e}")
 
-# メイン機能
-tab1, tab2 = st.tabs(["PDFアップロード", "テキスト貼り付け"])
-
-with tab1:
-    uploaded_file = st.file_uploader("決算短信のPDFを選択", type="pdf")
-    if uploaded_file and st.button("AI要約を実行 (PDF)"):
-        with pdfplumber.open(io.BytesIO(uploaded_file.read())) as pdf:
-            # 1ページ目からテキスト抽出
-            text = pdf.pages[0].extract_text()
-            generate_summary(text)
-
-with tab2:
-    input_text = st.text_area("決算短信のテキストをここにペースト", height=300)
-    if st.button("AI要約を実行 (テキスト)"):
-        generate_summary(input_text)
+# メイン処理
+if st.button("最新のTDnetをスキャンする"):
+    disclosures = fetch_tdnet_latest()
+    if disclosures:
+        st.info(f"現在、最新の開示を {len(disclosures)} 件取得しました。")
+        scan_with_ai(disclosures)
+    else:
+        st.warning("開示情報が見つかりませんでした。")
